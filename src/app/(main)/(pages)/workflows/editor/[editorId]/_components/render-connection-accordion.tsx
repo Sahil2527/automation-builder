@@ -2,120 +2,69 @@
 import React from 'react'
 import ConnectionCard from '@/app/(main)/(pages)/connections/_components/connection-card'
 import { AccordionContent } from '@/components/ui/accordion'
-import MultipleSelector from '@/components/ui/multiple-selector'
 import { Connection } from '@/lib/types'
 import { useNodeConnections } from '@/providers/connections-provider'
 import { EditorState } from '@/providers/editor-provider'
-import { useFuzzieStore } from '@/store'
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from '@/components/ui/command'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
-import { CheckIcon, ChevronsUpDown } from 'lucide-react'
+import { useFuzzieStore, Option } from '@/store'
 import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
 
-const frameworks = [
-  {
-    value: 'next.js',
-    label: 'Next.js',
-  },
-  {
-    value: 'sveltekit',
-    label: 'SvelteKit',
-  },
-  {
-    value: 'nuxt.js',
-    label: 'Nuxt.js',
-  },
-  {
-    value: 'remix',
-    label: 'Remix',
-  },
-  {
-    value: 'astro',
-    label: 'Astro',
-  },
-]
-
-const RenderConnectionAccordion = ({
-  connection,
-  state,
-}: {
+type Props = {
   connection: Connection
   state: EditorState
-}) => {
-  const {
-    title,
-    image,
-    description,
-    connectionKey,
-    accessTokenKey,
-    alwaysTrue,
-    slackSpecial,
-  } = connection
+}
 
+const RenderConnectionAccordion = ({ connection, state }: Props) => {
   const { nodeConnection } = useNodeConnections()
-  const { slackChannels, selectedSlackChannels, setSelectedSlackChannels } =
-    useFuzzieStore()
+  const { slackChannels, selectedSlackChannels, setSelectedSlackChannels } = useFuzzieStore()
 
-  const [open, setOpen] = React.useState(false)
-  const [value, setValue] = React.useState('')
+  const isConnected = React.useMemo(() => {
+    if (connection.alwaysTrue) return true
+    if (!connection.connectionKey || !connection.accessTokenKey) return false
 
-  const connectionData = (nodeConnection as any)[connectionKey]
+    const node = nodeConnection[connection.connectionKey as keyof typeof nodeConnection]
+    if (!node || typeof node !== 'object') return false
 
-  const isConnected =
-    alwaysTrue ||
-    (nodeConnection[connectionKey] &&
-      accessTokenKey &&
-      connectionData[accessTokenKey!])
+    return Boolean((node as any)[connection.accessTokenKey])
+  }, [connection, nodeConnection])
+
+  const handleSlackChannelChange = (channelId: string) => {
+    const channel = slackChannels.find(ch => ch.value === channelId)
+    if (channel) {
+      setSelectedSlackChannels([channel])
+    }
+  }
+
+  const selectedChannelId = React.useMemo(() => {
+    if (!Array.isArray(selectedSlackChannels) || selectedSlackChannels.length === 0) return ''
+    return selectedSlackChannels[0].value
+  }, [selectedSlackChannels])
 
   return (
-    <AccordionContent key={title}>
-      {state.editor.selectedNode.data.title === title && (
-        <>
-          <ConnectionCard
-            title={title}
-            icon={image}
-            description={description}
-            type={title}
-            connected={{ [title]: isConnected }}
-          />
-          {slackSpecial && isConnected && (
-            <div className="p-6">
-              {slackChannels?.length ? (
-                <>
-                  <div className="mb-4 ml-1">
-                    Select the slack channels to send notification and messages:
-                  </div>
-                  <MultipleSelector
-                    value={selectedSlackChannels}
-                    onChange={setSelectedSlackChannels}
-                    defaultOptions={slackChannels}
-                    placeholder="Select channels"
-                    emptyIndicator={
-                      <p className="text-center text-lg leading-10 text-gray-600 dark:text-gray-400">
-                        no results found.
-                      </p>
-                    }
-                  />
-                </>
-              ) : (
-                'No Slack channels found. Please add your Slack bot to your Slack channel'
-              )}
-            </div>
-          )}
-        </>
+    <div className="flex flex-col gap-4">
+      <ConnectionCard
+        title={connection.title}
+        description={connection.description}
+        image={connection.image}
+        isConnected={isConnected}
+      />
+      {connection.slackSpecial && isConnected && Array.isArray(slackChannels) && (
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium">Select Slack Channels</label>
+          <select
+            className="w-full rounded-md border p-2"
+            value={selectedChannelId}
+            onChange={(e) => handleSlackChannelChange(e.target.value)}
+          >
+            <option value="">Select a channel</option>
+            {slackChannels.map((channel: Option) => (
+              <option key={channel.value} value={channel.value}>
+                {channel.label}
+              </option>
+            ))}
+          </select>
+        </div>
       )}
-    </AccordionContent>
+    </div>
   )
 }
 

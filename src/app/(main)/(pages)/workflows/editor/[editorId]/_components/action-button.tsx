@@ -9,11 +9,19 @@ import { toast } from 'sonner'
 import { onCreateNewPageInDatabase } from '@/app/(main)/(pages)/connections/_actions/notion-connection'
 import { postMessageToSlack } from '@/app/(main)/(pages)/connections/_actions/slack-connection'
 
+interface GoogleFile {
+  id: string;
+  name: string;
+  mimeType: string;
+  webViewLink?: string;
+}
+
 type Props = {
   currentService: string
   nodeConnection: ConnectionProviderProps
   channels?: Option[]
   setChannels?: (value: Option[]) => void
+  selectedFiles?: GoogleFile[]
 }
 
 const ActionButton = ({
@@ -21,35 +29,36 @@ const ActionButton = ({
   nodeConnection,
   channels,
   setChannels,
+  selectedFiles = [],
 }: Props) => {
   const pathname = usePathname()
 
   const onSendDiscordMessage = useCallback(async () => {
     const response = await postContentToWebHook(
       nodeConnection.discordNode.content,
-      nodeConnection.discordNode.webhookURL
+      nodeConnection.discordNode.webhookURL,
+      selectedFiles
     )
 
-    if (response.message == 'success') {
+    if (response.message === 'success') {
+      toast.success('Message sent successfully')
       nodeConnection.setDiscordNode((prev: any) => ({
         ...prev,
         content: '',
       }))
+    } else {
+      toast.error('Failed to send message')
     }
-  }, [nodeConnection.discordNode])
+  }, [nodeConnection.discordNode, selectedFiles])
 
   const onStoreNotionContent = useCallback(async () => {
-    console.log(
-      nodeConnection.notionNode.databaseId,
-      nodeConnection.notionNode.accessToken,
-      nodeConnection.notionNode.content
-    )
     const response = await onCreateNewPageInDatabase(
       nodeConnection.notionNode.databaseId,
       nodeConnection.notionNode.accessToken,
       nodeConnection.notionNode.content
     )
     if (response) {
+      toast.success('Content stored successfully')
       nodeConnection.setNotionNode((prev: any) => ({
         ...prev,
         content: '',
@@ -61,9 +70,10 @@ const ActionButton = ({
     const response = await postMessageToSlack(
       nodeConnection.slackNode.slackAccessToken,
       channels!,
-      nodeConnection.slackNode.content
+      nodeConnection.slackNode.content,
+      selectedFiles
     )
-    if (response.message == 'Success') {
+    if (response.message === 'Success') {
       toast.success('Message sent successfully')
       nodeConnection.setSlackNode((prev: any) => ({
         ...prev,
@@ -73,9 +83,9 @@ const ActionButton = ({
     } else {
       toast.error(response.message)
     }
-  }, [nodeConnection.slackNode, channels])
+  }, [nodeConnection.slackNode, channels, selectedFiles])
 
-  const onCreateLocalNodeTempate = useCallback(async () => {
+  const onCreateLocalNodeTemplate = useCallback(async () => {
     if (currentService === 'Discord') {
       const response = await onCreateNodeTemplate(
         nodeConnection.discordNode.content,
@@ -126,10 +136,10 @@ const ActionButton = ({
               variant="outline"
               onClick={onSendDiscordMessage}
             >
-              Test Message
+              Send Message
             </Button>
             <Button
-              onClick={onCreateLocalNodeTempate}
+              onClick={onCreateLocalNodeTemplate}
               variant="outline"
             >
               Save Template
@@ -144,10 +154,10 @@ const ActionButton = ({
               variant="outline"
               onClick={onStoreNotionContent}
             >
-              Test
+              Store Content
             </Button>
             <Button
-              onClick={onCreateLocalNodeTempate}
+              onClick={onCreateLocalNodeTemplate}
               variant="outline"
             >
               Save Template
@@ -165,7 +175,7 @@ const ActionButton = ({
               Send Message
             </Button>
             <Button
-              onClick={onCreateLocalNodeTempate}
+              onClick={onCreateLocalNodeTemplate}
               variant="outline"
             >
               Save Template

@@ -29,6 +29,8 @@ model User {
   DiscordWebhook        DiscordWebhook[]
   Notion                Notion[]
   Slack                 Slack[]
+  Email                 Email[]
+  GitHub                GitHub[]
   connections           Connections[]
   workflows             Workflows[]
 }
@@ -90,6 +92,27 @@ model Notion {
   connections   Connections[]
 }
 
+model Email {
+  id String @id @default(uuid())
+  emailAddress String @unique
+  smtpHost String?
+  smtpPort Int?
+  smtpUser String?
+  smtpPass String?
+  User User @relation(fields: [userId], references: [clerkId])
+  userId String
+  connections Connections[]
+}
+
+model GitHub {
+  id String @id @default(uuid())
+  accessToken String @unique
+  username String
+  User User @relation(fields: [userId], references: [clerkId])
+  userId String
+  connections Connections[]
+}
+
 model Connections {
   id               String          @id @default(uuid())
   type             String          @unique
@@ -101,6 +124,10 @@ model Connections {
   userId           String?
   Slack            Slack?          @relation(fields: [slackId], references: [id])
   slackId          String?
+  Email            Email?          @relation(fields: [emailId], references: [id])
+  emailId          String?
+  GitHub           GitHub?         @relation(fields: [githubId], references: [id])
+  githubId         String?
 }
 
 model Workflows {
@@ -111,10 +138,14 @@ model Workflows {
   discordTemplate   String?
   notionTemplate    String?
   slackTemplate     String?
+  emailTemplate     String?
+  githubTemplate    String?
   slackChannels     String[]
   slackAccessToken  String?
   notionAccessToken String?
   notionDbId        String?
+  emailConfig       String?
+  githubConfig      String?
   flowPath          String?
   cronPath          String?
   publish           Boolean? @default(false)

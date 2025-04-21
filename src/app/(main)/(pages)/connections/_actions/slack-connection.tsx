@@ -4,6 +4,7 @@ import { Option } from '@/components/ui/multiple-selector'
 import { db } from '@/lib/db'
 import { currentUser } from '@clerk/nextjs'
 import axios from 'axios'
+import { GoogleFile } from '@/lib/google-file-types'
 
 export const onSlackConnect = async (
   app_id: string,
@@ -84,46 +85,63 @@ export async function listBotChannels(
 const postMessageInSlackChannel = async (
   slackAccessToken: string,
   slackChannel: string,
-  content: string
+  content: string,
+  attachments?: GoogleFile[]
 ): Promise<void> => {
   try {
+    const message: any = {
+      channel: slackChannel,
+      text: content,
+    };
+
+    if (attachments && attachments.length > 0) {
+      message.attachments = attachments.map(file => ({
+        fallback: `Google Drive File: ${file.name}`,
+        title: file.name,
+        title_link: file.webViewLink,
+        text: "View file in Google Drive",
+        color: "#4285F4" // Google Drive blue color
+      }));
+    }
+
     await axios.post(
       'https://slack.com/api/chat.postMessage',
-      { channel: slackChannel, text: content },
+      message,
       {
         headers: {
           Authorization: `Bearer ${slackAccessToken}`,
           'Content-Type': 'application/json;charset=utf-8',
         },
       }
-    )
-    console.log(`Message posted successfully to channel ID: ${slackChannel}`)
+    );
+    console.log(`Message posted successfully to channel ID: ${slackChannel}`);
   } catch (error: any) {
     console.error(
       `Error posting message to Slack channel ${slackChannel}:`,
       error?.response?.data || error.message
-    )
+    );
   }
-}
+};
 
 // Wrapper function to post messages to multiple Slack channels
 export const postMessageToSlack = async (
   slackAccessToken: string,
   selectedSlackChannels: Option[],
-  content: string
+  content: string,
+  attachments?: GoogleFile[]
 ): Promise<{ message: string }> => {
-  if (!content) return { message: 'Content is empty' }
-  if (!selectedSlackChannels?.length) return { message: 'Channel not selected' }
+  if (!content) return { message: 'Content is empty' };
+  if (!selectedSlackChannels?.length) return { message: 'Channel not selected' };
 
   try {
     selectedSlackChannels
       .map((channel) => channel?.value)
       .forEach((channel) => {
-        postMessageInSlackChannel(slackAccessToken, channel, content)
-      })
+        postMessageInSlackChannel(slackAccessToken, channel, content, attachments);
+      });
   } catch (error) {
-    return { message: 'Message could not be sent to Slack' }
+    return { message: 'Message could not be sent to Slack' };
   }
 
-  return { message: 'Success' }
-}
+  return { message: 'Success' };
+};

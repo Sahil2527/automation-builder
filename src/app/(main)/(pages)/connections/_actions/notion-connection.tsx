@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 import { currentUser } from '@clerk/nextjs'
 import { Client } from '@notionhq/client'
 
+/** ✅ Handles Notion Connection */
 export const onNotionConnect = async (
   access_token: string,
   workspace_id: string,
@@ -14,103 +15,129 @@ export const onNotionConnect = async (
 ) => {
   'use server'
 
-  if (!access_token || !workspace_id || !workspace_name || !id) {
-    throw new Error("❌ Missing required parameters for Notion connection.");
+  console.log('🔄 Attempting Notion connection for user:', id)
+
+  // ✅ Check for required fields
+  if (!access_token) {
+    console.error('❌ Missing access token!')
+    return { error: 'Access token is required' }
   }
 
-  console.log("🔗 Connecting to Notion...");
-  console.log({ access_token, workspace_id, workspace_name, database_id, id });
+  if (!id) {
+    console.error('❌ User ID is missing!')
+    return { error: 'User ID is required' }
+  }
 
-  // Check if Notion is already connected
+  // ✅ Check if Notion is already connected
   const notion_connected = await db.notion.findFirst({
-    where: { accessToken: access_token },
-    include: {
-      connections: { select: { type: true } },
-    },
-  });
+    where: { userId: id },
+  })
+
+  console.log('🔍 Existing Notion connection:', notion_connected)
 
   if (!notion_connected) {
-    // Create a new Notion connection
-    await db.notion.create({
-      data: {
-        userId: id,
-        workspaceIcon: workspace_icon || '',
-        accessToken: access_token,
-        workspaceId: workspace_id,
-        workspaceName: workspace_name,
-        databaseId: database_id || '',
-        connections: {
-          create: {
-            userId: id,
-            type: 'Notion',
+    console.log('⏳ Creating new Notion connection...')
+    try {
+      const newConnection = await db.notion.create({
+        data: {
+          userId: id,
+          workspaceIcon: workspace_icon || '',
+          accessToken: access_token,
+          workspaceId: workspace_id || '',
+          workspaceName: workspace_name || '',
+          databaseId: database_id || '',
+          connections: {
+            create: {
+              userId: id,
+              type: 'Notion',
+            },
           },
         },
-      },
-    });
-    console.log("✅ Notion connection created successfully.");
+      })
+
+      console.log('✅ Notion connection created:', newConnection)
+      return { success: true, connection: newConnection }
+    } catch (error) {
+      console.error('🚨 Error creating Notion connection:', error)
+      return { error: 'Failed to create Notion connection' }
+    }
   } else {
-    console.log("⚠️ Notion is already connected.");
+    console.log('⚠️ Notion connection already exists!')
+    return { message: 'Notion is already connected', connection: notion_connected }
   }
-};
+}
 
+/** ✅ Fetch Notion Connection */
 export const getNotionConnection = async () => {
-  const user = await currentUser();
+  const user = await currentUser()
   if (!user) {
-    console.warn("⚠️ No user found for Notion connection.");
-    return null;
+    console.error('❌ No authenticated user found!')
+    return null
   }
 
-  const connection = await db.notion.findFirst({ where: { userId: user.id } });
-  console.log("🔍 Found Notion connection:", connection);
-  return connection;
-};
+  console.log('🔄 Fetching Notion connection for user:', user.id)
+  const connection = await db.notion.findFirst({
+    where: { userId: user.id },
+  })
 
+  if (!connection) {
+    console.warn('⚠️ No Notion connection found for this user')
+  }
+
+  return connection
+}
+
+/** ✅ Fetch Notion Database */
 export const getNotionDatabase = async (databaseId: string, accessToken: string) => {
-  if (!databaseId || !accessToken) {
-    throw new Error("❌ Missing database ID or access token.");
-  }
-
-  console.log("📂 Fetching Notion database...");
-  const notion = new Client({ auth: accessToken });
-
   try {
-    const response = await notion.databases.retrieve({ database_id: databaseId });
-    console.log("✅ Notion database retrieved:", response);
-    return response;
-  } catch (error) {
-    console.error("❌ Error retrieving Notion database:", error);
-    throw new Error("Failed to retrieve Notion database.");
-  }
-};
+    console.log('🔍 Fetching Notion database:', databaseId)
 
+    const notion = new Client({ auth: accessToken })
+    const response = await notion.databases.retrieve({ database_id: databaseId })
+
+    console.log('✅ Notion Database Retrieved:', response)
+    return response
+  } catch (error) {
+    console.error('🚨 Error fetching Notion database:', error)
+    return { error: 'Failed to retrieve Notion database' }
+  }
+}
+
+interface NotionPageProperties {
+  title: string;
+  type: string;
+  size: number;
+  lastModified: string;
+  description: string;
+  fileUrl?: string;
+  previewUrl?: string;
+}
+
+/** ✅ Create a New Page in Notion Database */
 export const onCreateNewPageInDatabase = async (
   databaseId: string,
   accessToken: string,
   content: string
 ) => {
-  console.log("📝 Creating new Notion page...");
-  console.log({ databaseId, accessToken: accessToken ? "Provided" : "Missing", content });
-
-  if (!databaseId || !accessToken || !content) {
-    throw new Error("❌ Missing required parameters for creating a Notion page.");
-  }
-
-  const notion = new Client({ auth: accessToken });
-
   try {
-    const response = await notion.pages.create({
-      parent: { database_id: databaseId },
-      properties: {
-        Name: {
-          title: [{ text: { content } }],
-        },
-      },
-    });
+    console.log('📝 Creating new Notion page in database:', databaseId)
 
-    console.log("✅ Notion page created successfully:", response);
-    return response;
+    const notion = new Client({ auth: accessToken })
+    const response = await notion.pages.create({
+      parent: { type: 'database_id', database_id: databaseId },
+      properties: {
+        title: [
+          {
+            text: { content },
+          },
+        ],
+      },
+    })
+
+    console.log('✅ Notion Page Created:', response)
+    return response
   } catch (error) {
-    console.error("❌ Error creating Notion page:", error);
-    throw new Error("Failed to create a new page in the Notion database.");
+    console.error('🚨 Error creating Notion page:', error)
+    return { error: 'Failed to create Notion page' }
   }
-};
+}

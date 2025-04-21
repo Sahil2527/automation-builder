@@ -5,6 +5,7 @@ import {
   CircuitBoard,
   Database,
   GitBranch,
+  Github,
   HardDrive,
   Mail,
   MousePointerClickIcon,
@@ -58,6 +59,13 @@ const EditorCanvasIconHelper = ({ type }: Props) => {
     case 'Notion':
       return (
         <Database
+          className="flex-shrink-0"
+          size={30}
+        />
+      )
+    case 'GitHub':
+      return (
+        <Github
           className="flex-shrink-0"
           size={30}
         />

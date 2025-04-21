@@ -8,6 +8,7 @@ import {
   onFlowPublish,
 } from '../_actions/workflow-connections'
 import { toast } from 'sonner'
+import DocumentationModal from '@/components/global/documentation-modal'
 
 type Props = {
   children: React.ReactNode
@@ -19,6 +20,7 @@ const FlowInstance = ({ children, edges, nodes }: Props) => {
   const pathname = usePathname()
   const [isFlow, setIsFlow] = useState([])
   const { nodeConnection } = useNodeConnections()
+  const [isDocumentationOpen, setIsDocumentationOpen] = useState(false)
 
   const onFlowAutomation = useCallback(async () => {
     const flow = await onCreateNodesEdges(
@@ -69,8 +71,25 @@ const FlowInstance = ({ children, edges, nodes }: Props) => {
         >
           Publish
         </Button>
+        <Button
+          onClick={() => setIsDocumentationOpen(true)}
+          disabled={isFlow.length < 1}
+        >
+          Generate Documentation
+        </Button>
       </div>
       {children}
+      <DocumentationModal
+        isOpen={isDocumentationOpen}
+        onClose={() => setIsDocumentationOpen(false)}
+        workflowData={{
+          name: nodes[0]?.data?.label || 'Workflow',
+          description: nodes[0]?.data?.description || '',
+          nodes,
+          edges,
+          connections: Array.isArray(nodeConnection) ? nodeConnection : [],
+        }}
+      />
     </div>
   )
 }

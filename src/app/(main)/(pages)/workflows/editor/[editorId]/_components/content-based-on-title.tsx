@@ -2,7 +2,7 @@ import { AccordionContent } from '@/components/ui/accordion'
 import { ConnectionProviderProps } from '@/providers/connections-provider'
 import { EditorState } from '@/providers/editor-provider'
 import { nodeMapper } from '@/lib/types'
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   Card,
   CardContent,
@@ -18,6 +18,8 @@ import ActionButton from './action-button'
 import { getFileMetaData } from '@/app/(main)/(pages)/connections/_actions/google-connection'
 import axios from 'axios'
 import { toast } from 'sonner'
+import GoogleDriveFileSelector from '@/components/ui/google-drive-file-selector'
+import { GoogleFile } from '@/lib/google-file-types'
 
 export interface Option {
   value: string
@@ -51,6 +53,7 @@ const ContentBasedOnTitle = ({
 }: Props) => {
   const { selectedNode } = newState.editor
   const title = selectedNode.data.title
+  const [selectedFiles, setSelectedFiles] = useState<GoogleFile[]>([])
 
   useEffect(() => {
     const reqGoogle = async () => {
@@ -107,6 +110,13 @@ const ContentBasedOnTitle = ({
             onChange={(event) => onContentChange(nodeConnection, title, event)}
           />
 
+          {(title === 'Discord' || title === 'Slack') && (
+            <GoogleDriveFileSelector
+              selectedFiles={selectedFiles}
+              onFileSelect={setSelectedFiles}
+            />
+          )}
+
           {JSON.stringify(file) !== '{}' && title !== 'Google Drive' && (
             <Card className="w-full">
               <CardContent className="px-2 py-3">
@@ -129,6 +139,7 @@ const ContentBasedOnTitle = ({
             nodeConnection={nodeConnection}
             channels={selectedSlackChannels}
             setChannels={setSelectedSlackChannels}
+            selectedFiles={selectedFiles}
           />
         </div>
       </Card>

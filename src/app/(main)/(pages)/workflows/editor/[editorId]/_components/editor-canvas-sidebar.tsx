@@ -1,5 +1,5 @@
 'use client'
-import { EditorCanvasTypes, EditorNodeType } from '@/lib/types'
+import { EditorCanvasTypes, EditorNodeType, nodeMapper } from '@/lib/types'
 import { useNodeConnections } from '@/providers/connections-provider'
 import { useEditor } from '@/providers/editor-provider'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -28,6 +28,8 @@ import {
 import RenderConnectionAccordion from './render-connection-accordion'
 import RenderOutputAccordion from './render-output-accordian'
 import { useFuzzieStore } from '@/store'
+import GitHubActions from './github-actions'
+import EmailActions from './email-actions'
 
 type Props = {
   nodes: EditorNodeType[]
@@ -37,6 +39,7 @@ const EditorCanvasSidebar = ({ nodes }: Props) => {
   const { state } = useEditor()
   const { nodeConnection } = useNodeConnections()
   const { googleFile, setSlackChannels } = useFuzzieStore()
+  
   useEffect(() => {
     if (state) {
       onConnections(nodeConnection, state, googleFile)
@@ -51,6 +54,17 @@ const EditorCanvasSidebar = ({ nodes }: Props) => {
       )
     }
   }, [nodeConnection])
+
+  const getRelevantConnection = () => {
+    if (!state.editor.selectedNode) return null;
+    
+    const nodeType = state.editor.selectedNode.type;
+    const connectionKey = nodeMapper[nodeType];
+    
+    if (!connectionKey) return null;
+
+    return CONNECTIONS.find(conn => conn.connectionKey === connectionKey);
+  }
 
   return (
     <aside>
@@ -84,10 +98,14 @@ const EditorCanvasSidebar = ({ nodes }: Props) => {
               >
                 <CardHeader className="flex flex-row items-center gap-4 p-4">
                   <EditorCanvasIconHelper type={cardKey as EditorCanvasTypes} />
-                  <CardTitle className="text-md">
-                    {cardKey}
-                    <CardDescription>{cardValue.description}</CardDescription>
-                  </CardTitle>
+                  <div>
+                    <CardTitle className="text-md">
+                      {cardKey}
+                    </CardTitle>
+                    <CardDescription>
+                      {cardValue.description}
+                    </CardDescription>
+                  </div>
                 </CardHeader>
               </Card>
             ))}
@@ -96,41 +114,50 @@ const EditorCanvasSidebar = ({ nodes }: Props) => {
           value="settings"
           className="-mt-6"
         >
-          <div className="px-2 py-4 text-center text-xl font-bold">
-            {state.editor.selectedNode.data.title}
-          </div>
+          {state.editor.selectedNode && (
+            <>
+              <div className="px-2 py-4 text-center text-xl font-bold">
+                {state.editor.selectedNode.data.title || state.editor.selectedNode.type}
+              </div>
 
-          <Accordion type="multiple">
-            <AccordionItem
-              value="Options"
-              className="border-y-[1px] px-2"
-            >
-              <AccordionTrigger className="!no-underline">
-                Account
-              </AccordionTrigger>
-              <AccordionContent>
-                {CONNECTIONS.map((connection) => (
-                  <RenderConnectionAccordion
-                    key={connection.title}
-                    state={state}
-                    connection={connection}
-                  />
-                ))}
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem
-              value="Expected Output"
-              className="px-2"
-            >
-              <AccordionTrigger className="!no-underline">
-                Action
-              </AccordionTrigger>
-              <RenderOutputAccordion
-                state={state}
-                nodeConnection={nodeConnection}
-              />
-            </AccordionItem>
-          </Accordion>
+              <Accordion type="multiple">
+                {getRelevantConnection() && (
+                  <AccordionItem
+                    value="Options"
+                    className="border-y-[1px] px-2"
+                  >
+                    <AccordionTrigger className="!no-underline">
+                      Account
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <RenderConnectionAccordion
+                        connection={getRelevantConnection()!}
+                        state={state}
+                      />
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
+                <AccordionItem
+                  value="Expected Output"
+                  className="px-2"
+                >
+                  <AccordionTrigger className="!no-underline">
+                    Action
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    {state.editor.selectedNode.type === 'GitHub' && <GitHubActions />}
+                    {state.editor.selectedNode.type === 'Email' && <EmailActions />}
+                    {state.editor.selectedNode.type !== 'GitHub' && state.editor.selectedNode.type !== 'Email' && (
+                      <RenderOutputAccordion
+                        state={state}
+                        nodeConnection={nodeConnection}
+                      />
+                    )}
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </>
+          )}
         </TabsContent>
       </Tabs>
     </aside>

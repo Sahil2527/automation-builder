@@ -1,5 +1,6 @@
 'use client'
 import { createContext, useContext, useState } from 'react'
+import { ConnectionProviderProps } from '@/lib/types'
 
 export type ConnectionProviderProps = {
   discordNode: {
@@ -43,6 +44,18 @@ export type ConnectionProviderProps = {
   >
   isLoading: boolean
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>
+  emailNode: {
+    email: string
+    smtpHost: string
+    smtpPort: number
+    smtpUser: string
+    smtpPass: string
+  }
+  setEmailNode: React.Dispatch<React.SetStateAction<any>>
+  githubNode: {
+    token: string
+  }
+  setGitHubNode: React.Dispatch<React.SetStateAction<any>>
 }
 
 type ConnectionWithChildProps = {
@@ -78,11 +91,23 @@ const InitialValues: ConnectionProviderProps = {
     teamName: '',
     content: '',
   },
+  emailNode: {
+    email: '',
+    smtpHost: '',
+    smtpPort: 587,
+    smtpUser: '',
+    smtpPass: '',
+  },
+  githubNode: {
+    token: '',
+  },
   isLoading: false,
   setGoogleNode: () => undefined,
   setDiscordNode: () => undefined,
   setNotionNode: () => undefined,
   setSlackNode: () => undefined,
+  setEmailNode: () => undefined,
+  setGitHubNode: () => undefined,
   setIsLoading: () => undefined,
   setWorkFlowTemplate: () => undefined,
 }
@@ -95,6 +120,8 @@ export const ConnectionsProvider = ({ children }: ConnectionWithChildProps) => {
   const [googleNode, setGoogleNode] = useState(InitialValues.googleNode)
   const [notionNode, setNotionNode] = useState(InitialValues.notionNode)
   const [slackNode, setSlackNode] = useState(InitialValues.slackNode)
+  const [emailNode, setEmailNode] = useState(InitialValues.emailNode)
+  const [githubNode, setGitHubNode] = useState(InitialValues.githubNode)
   const [isLoading, setIsLoading] = useState(InitialValues.isLoading)
   const [workflowTemplate, setWorkFlowTemplate] = useState(
     InitialValues.workflowTemplate
@@ -109,6 +136,10 @@ export const ConnectionsProvider = ({ children }: ConnectionWithChildProps) => {
     setNotionNode,
     slackNode,
     setSlackNode,
+    emailNode,
+    setEmailNode,
+    githubNode,
+    setGitHubNode,
     isLoading,
     setIsLoading,
     workflowTemplate,

@@ -1,5 +1,5 @@
-import { ConnectionProviderProps } from '@/providers/connections-provider'
 import { z } from 'zod'
+import { Dispatch, SetStateAction } from 'react'
 
 export const EditUserProfileSchema = z.object({
   email: z.string().email('Required'),
@@ -7,20 +7,78 @@ export const EditUserProfileSchema = z.object({
 })
 
 export const WorkflowFormSchema = z.object({
-  name: z.string().min(1, 'Required'),
-  description: z.string().min(1, 'Required'),
+  name: z.string().min(1, 'Name is required'),
+  description: z.string().min(1, 'Description is required'),
 })
 
-export type ConnectionTypes = 'Google Drive' | 'Notion' | 'Slack' | 'Discord'
+export type ConnectionTypes =
+  | 'Google Drive'
+  | 'Discord'
+  | 'Slack'
+  | 'Notion'
+  | 'Email'
+  | 'GitHub'
 
 export type Connection = {
-  title: ConnectionTypes
+  title: string
   description: string
   image: string
-  connectionKey: keyof ConnectionProviderProps
+  connectionKey: string
   accessTokenKey?: string
   alwaysTrue?: boolean
   slackSpecial?: boolean
+}
+
+export type WorkflowTemplate = {
+  discord?: string
+  notion?: string
+  slack?: string
+}
+
+export type ConnectionProviderProps = {
+  googleNode: any[]
+  discordNode: {
+    webhookURL: string
+    content: string
+    webhookName: string
+    guildName: string
+  }
+  notionNode: {
+    accessToken: string
+    databaseId: string
+    workspaceName: string
+    content: any
+  }
+  slackNode: {
+    appId: string
+    authedUserId: string
+    authedUserToken: string
+    slackAccessToken: string
+    botUserId: string
+    teamId: string
+    teamName: string
+    content: string
+  }
+  emailNode: {
+    email: string
+    smtpHost: string
+    smtpPort: number
+    smtpUser: string
+    smtpPass: string
+  }
+  githubNode: {
+    token: string
+  }
+  isLoading: boolean
+  workflowTemplate: WorkflowTemplate
+  setGoogleNode: Dispatch<SetStateAction<any[]>>
+  setDiscordNode: Dispatch<SetStateAction<any>>
+  setNotionNode: Dispatch<SetStateAction<any>>
+  setSlackNode: Dispatch<SetStateAction<any>>
+  setEmailNode: Dispatch<SetStateAction<any>>
+  setGitHubNode: Dispatch<SetStateAction<any>>
+  setIsLoading: Dispatch<SetStateAction<boolean>>
+  setWorkFlowTemplate: Dispatch<SetStateAction<WorkflowTemplate>>
 }
 
 export type EditorCanvasTypes =
@@ -30,6 +88,7 @@ export type EditorCanvasTypes =
   | 'Slack'
   | 'Google Drive'
   | 'Notion'
+  | 'GitHub'
   | 'Custom Webhook'
   | 'Google Calendar'
   | 'Trigger'
@@ -89,4 +148,12 @@ export const nodeMapper: Record<string, string> = {
   Slack: 'slackNode',
   Discord: 'discordNode',
   'Google Drive': 'googleNode',
+  Email: 'emailNode',
+  Condition: 'conditionNode',
+  AI: 'aiNode',
+  'Custom Webhook': 'webhookNode',
+  'Google Calendar': 'calendarNode',
+  Trigger: 'triggerNode',
+  Action: 'actionNode',
+  Wait: 'waitNode',
 }

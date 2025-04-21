@@ -6,6 +6,7 @@ import { ClerkProvider } from '@clerk/nextjs'
 import ModalProvider from '@/providers/modal-provider'
 import { Toaster } from '@/components/ui/sonner'
 import { BillingProvider } from '@/providers/billing-provider'
+import ChatbotWrapper from '@/components/ChatbotWrapper'
 
 const font = DM_Sans({ subsets: ['latin'] })
 
@@ -35,6 +36,18 @@ export default function RootLayout({
               <ModalProvider>
                 {children}
                 <Toaster />
+                <div style={{ 
+                  position: 'fixed', 
+                  bottom: 0, 
+                  right: 0, 
+                  zIndex: 9999,
+                  pointerEvents: 'auto',
+                  display: 'flex',
+                  alignItems: 'flex-end',
+                  justifyContent: 'flex-end'
+                }}>
+                  <ChatbotWrapper />
+                </div>
               </ModalProvider>
             </BillingProvider>
           </ThemeProvider>

@@ -120,6 +120,10 @@ export const EditorCanvasDefaultCardTypes = {
     type: 'Trigger',
   },
   Notion: { description: 'Create entries directly in notion.', type: 'Action' },
+  GitHub: {
+    description: 'Create issues, commit files, and manage repositories.',
+    type: 'Action',
+  },
   'Custom Webhook': {
     description:
       'Connect any app that has an API key and send data to your applicaiton.',
@@ -177,5 +181,19 @@ export const CONNECTIONS: Connection[] = [
     connectionKey: 'slackNode',
     accessTokenKey: 'slackAccessToken',
     slackSpecial: true,
+  },
+  {
+    title: 'Email',
+    description: 'Connect your email to send automated emails with attachments.',
+    image: '/email.png',
+    connectionKey: 'emailNode',
+    accessTokenKey: 'smtpPass',
+  },
+  {
+    title: 'GitHub',
+    description: 'Connect your GitHub to create issues and manage repositories.',
+    image: '/github.png',
+    connectionKey: 'githubNode',
+    accessTokenKey: 'token',
   },
 ]

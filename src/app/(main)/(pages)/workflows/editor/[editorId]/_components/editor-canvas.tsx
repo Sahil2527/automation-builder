@@ -155,6 +155,7 @@ const EditorCanvas = (props: Props) => {
       Slack: EditorCanvasCardSingle,
       'Google Drive': EditorCanvasCardSingle,
       Notion: EditorCanvasCardSingle,
+      GitHub: EditorCanvasCardSingle,
       Discord: EditorCanvasCardSingle,
       'Custom Webhook': EditorCanvasCardSingle,
       'Google Calendar': EditorCanvasCardSingle,

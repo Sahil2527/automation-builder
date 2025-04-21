@@ -3,6 +3,7 @@
 import { db } from '@/lib/db'
 import { currentUser } from '@clerk/nextjs'
 import axios from 'axios'
+import { GoogleFile } from '@/lib/google-file-types'
 
 export const onDiscordConnect = async (
   channel_id: string,
@@ -109,14 +110,34 @@ export const getDiscordConnectionUrl = async () => {
   }
 }
 
-export const postContentToWebHook = async (content: string, url: string) => {
-  console.log(content)
-  if (content != '') {
-    const posted = await axios.post(url, { content })
-    if (posted) {
-      return { message: 'success' }
-    }
-    return { message: 'failed request' }
+export const postContentToWebHook = async (
+  content: string,
+  url: string,
+  attachments?: GoogleFile[]
+) => {
+  if (content === '') {
+    return { message: 'String empty' };
   }
-  return { message: 'String empty' }
-}
+
+  try {
+    const message: any = { content };
+
+    if (attachments && attachments.length > 0) {
+      message.embeds = attachments.map(file => ({
+        title: file.name,
+        url: file.webViewLink,
+        description: "Click to view file in Google Drive",
+        color: 4886754 // Google Drive blue color in decimal
+      }));
+    }
+
+    const posted = await axios.post(url, message);
+    if (posted) {
+      return { message: 'success' };
+    }
+    return { message: 'failed request' };
+  } catch (error) {
+    console.error('Error posting to Discord:', error);
+    return { message: 'failed request' };
+  }
+};

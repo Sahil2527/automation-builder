@@ -2,6 +2,9 @@
 import { Option } from '@/components/ui/multiple-selector'
 import { db } from '@/lib/db'
 import { auth, currentUser } from '@clerk/nextjs'
+import { z } from 'zod'
+import { WorkflowFormSchema } from '@/lib/types'
+import { createGitHubIssue, commitFileToRepo } from '../../connections/_actions/github-connection'
 
 export const getGoogleListener = async () => {
   const { userId } = auth()
@@ -41,7 +44,8 @@ export const onCreateNodeTemplate = async (
   workflowId: string,
   channels?: Option[],
   accessToken?: string,
-  notionDbId?: string
+  notionDbId?: string,
+  config?: any
 ) => {
   if (type === 'Discord') {
     const response = await db.workflows.update({
@@ -133,6 +137,45 @@ export const onCreateNodeTemplate = async (
 
     if (response) return 'Notion template saved'
   }
+
+  if (type === 'Email') {
+    const response = await db.workflows.update({
+      where: {
+        id: workflowId,
+      },
+      data: {
+        emailTemplate: content,
+        emailConfig: JSON.stringify(config),
+      },
+    })
+
+    if (response) return 'Email template saved'
+  }
+
+  if (type === 'GitHub') {
+    const response = await db.workflows.update({
+      where: {
+        id: workflowId,
+      },
+      data: {
+        githubTemplate: content,
+        githubConfig: JSON.stringify(config),
+      },
+    })
+
+    if (response) {
+      const { action, repository, title, body, path, content: fileContent, message } = config
+      const [owner, repo] = repository.split('/')
+
+      if (action === 'create_issue') {
+        await createGitHubIssue(accessToken!, owner, repo, title, body)
+      } else if (action === 'commit_file') {
+        await commitFileToRepo(accessToken!, owner, repo, path, fileContent, message)
+      }
+
+      return 'GitHub action executed successfully'
+    }
+  }
 }
 
 export const onGetWorkflows = async () => {
@@ -148,21 +191,30 @@ export const onGetWorkflows = async () => {
   }
 }
 
-export const onCreateWorkflow = async (name: string, description: string) => {
-  const user = await currentUser()
+export const onCreateWorkflow = async (
+  values: z.infer<typeof WorkflowFormSchema>
+) => {
+  try {
+    const user = await currentUser()
+    if (!user) {
+      return { message: 'User not found' }
+    }
 
-  if (user) {
-    //create new workflow
     const workflow = await db.workflows.create({
       data: {
+        name: values.name,
+        description: values.description,
         userId: user.id,
-        name,
-        description,
       },
     })
 
-    if (workflow) return { message: 'workflow created' }
-    return { message: 'Oops! try again' }
+    if (workflow) {
+      return { message: 'Workflow created successfully' }
+    }
+    return { message: 'Failed to create workflow' }
+  } catch (error) {
+    console.error('Error creating workflow:', error)
+    return { message: 'Failed to create workflow' }
   }
 }
 

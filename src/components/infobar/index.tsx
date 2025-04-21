@@ -14,11 +14,15 @@ import {
 import { UserButton } from '@clerk/nextjs'
 import { useBilling } from '@/providers/billing-provider'
 import { onPaymentDetails } from '@/app/(main)/(pages)/billing/_actions/payment-connecetions'
+import UserGuideModal from '@/components/global/user-guide-modal'
+import SupportModal from '@/components/global/support-modal'
 
 type Props = {}
 
 const InfoBar = (props: Props) => {
   const { credits, tier, setCredits, setTier } = useBilling()
+  const [isGuideOpen, setIsGuideOpen] = React.useState(false)
+  const [isSupportOpen, setIsSupportOpen] = React.useState(false)
 
   const onGetPayment = async () => {
     const response = await onPaymentDetails()
@@ -53,25 +57,27 @@ const InfoBar = (props: Props) => {
       </span>
       <TooltipProvider>
         <Tooltip delayDuration={0}>
-          <TooltipTrigger>
-            <Headphones />
+          <TooltipTrigger onClick={() => setIsSupportOpen(true)}>
+            <Headphones className="cursor-pointer" />
           </TooltipTrigger>
           <TooltipContent>
-            <p>Contact Support</p>
+            <p>Support Center</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
       <TooltipProvider>
         <Tooltip delayDuration={0}>
-          <TooltipTrigger>
-            <Book />
+          <TooltipTrigger onClick={() => setIsGuideOpen(true)}>
+            <Book className="cursor-pointer" />
           </TooltipTrigger>
           <TooltipContent>
-            <p>Guide</p>
+            <p>User Guide</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
       <UserButton />
+      <UserGuideModal isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} />
+      <SupportModal isOpen={isSupportOpen} onClose={() => setIsSupportOpen(false)} />
     </div>
   )
 }
